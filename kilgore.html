@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KILGORE</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', monospace;
+    background: #000;
+    color: #b266ff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 700px;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 3.5rem;
+    letter-spacing: 0.5rem;
+    color: #b266ff;
+    text-shadow: 0 0 15px #8000ff, 0 0 30px #6600cc;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    color: #7a3fb3;
+    font-size: 0.9rem;
+    margin-bottom: 40px;
+    letter-spacing: 0.2rem;
+  }
+
+  .orb {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #4a0080 0%, #1a0033 70%, #000 100%);
+    border: 2px solid #8000ff;
+    box-shadow: 0 0 40px #6600cc, inset 0 0 40px #3d0066;
+    margin: 0 auto 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .orb:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 60px #8000ff, inset 0 0 50px #4d0080;
+  }
+
+  .orb.listening {
+    animation: pulse 1.2s infinite;
+    border-color: #cc66ff;
+  }
+
+  .orb.speaking {
+    animation: wave 0.8s infinite;
+    border-color: #ff66ff;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 40px #6600cc, inset 0 0 40px #3d0066; }
+    50% { box-shadow: 0 0 80px #b266ff, inset 0 0 60px #6600cc; transform: scale(1.08); }
+  }
+
+  @keyframes wave {
+    0%, 100% { box-shadow: 0 0 40px #ff66ff, inset 0 0 40px #660066; }
+    50% { box-shadow: 0 0 70px #ff99ff, inset 0 0 55px #800080; }
+  }
+
+  .mic-icon {
+    font-size: 4rem;
+    color: #b266ff;
+    user-select: none;
+  }
+
+  .status {
+    color: #9966cc;
+    font-size: 1rem;
+    min-height: 24px;
+    margin-bottom: 20px;
+    letter-spacing: 0.1rem;
+  }
+
+  .transcript-box {
+    background: rgba(25, 0, 51, 0.6);
+    border: 1px solid #4d0080;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 80px;
+    margin-bottom: 20px;
+    text-align: left;
+    box-shadow: 0 0 20px rgba(128, 0, 255, 0.2);
+  }
+
+  .label {
+    color: #7a3fb3;
+    font-size: 0.75rem;
+    letter-spacing: 0.15rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .content {
+    color: #d9b3ff;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    min-height: 24px;
+    word-wrap: break-word;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  button {
+    background: transparent;
+    border: 1px solid #8000ff;
+    color: #b266ff;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 4px;
+    letter-spacing: 0.1rem;
+    transition: all 0.2s;
+  }
+
+  button:hover {
+    background: #8000ff;
+    color: #000;
+    box-shadow: 0 0 15px #8000ff;
+  }
+
+  button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .footer {
+    margin-top: 30px;
+    color: #4d0080;
+    font-size: 0.7rem;
+    letter-spacing: 0.15rem;
+  }
+
+  @media (max-width: 500px) {
+    h1 { font-size: 2.3rem; }
+    .orb { width: 140px; height: 140px; }
+    .mic-icon { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>KILGORE</h1>
+  <div class="subtitle">ASSISTENTE PESSOAL DO MK</div>
+
+  <div class="orb" id="orb" title="Clica pra falar">
+    <span class="mic-icon">⏺</span>
+  </div>
+
+  <div class="status" id="status">Clica na esfera pra começar</div>
+
+  <div class="transcript-box">
+    <div class="label">Você disse:</div>
+    <div class="content" id="userText">—</div>
+  </div>
+
+  <div class="transcript-box">
+    <div class="label">KILGORE:</div>
+    <div class="content" id="botText">—</div>
+  </div>
+
+  <div class="controls">
+    <button id="stopBtn">Parar fala</button>
+    <button id="clearBtn">Limpar</button>
+  </div>
+
+  <div class="footer">by MK · v1.0</div>
+</div>
+
+<script>
+// ============================================================
+// KILGORE - assistente de voz
+// Elementos da UI
+// ============================================================
+const orb = document.getElementById('orb');
+const statusEl = document.getElementById('status');
+const userTextEl = document.getElementById('userText');
+const botTextEl = document.getElementById('botText');
+const stopBtn = document.getElementById('stopBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+// ============================================================
+// Reconhecimento de voz (Web Speech API)
+// Funciona no Chrome/Edge. Firefox tem suporte limitado.
+// ============================================================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isListening = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isListening = true;
+    orb.classList.add('listening');
+    statusEl.textContent = 'Ouvindo...';
+  };
+
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    userTextEl.textContent = text;
+    handleQuestion(text);
+  };
+
+  recognition.onerror = (event) => {
+    statusEl.textContent = 'Erro: ' + event.error;
+    stopListening();
+  };
+
+  recognition.onend = () => {
+    stopListening();
+  };
+} else {
+  statusEl.textContent = 'Seu navegador não suporta reconhecimento de voz. Usa Chrome ou Edge.';
+  orb.style.cursor = 'not-allowed';
+}
+
+function stopListening() {
+  isListening = false;
+  orb.classList.remove('listening');
+  if (statusEl.textContent === 'Ouvindo...') {
+    statusEl.textContent = 'Clica na esfera pra falar de novo';
+  }
+}
+
+// ============================================================
+// Síntese de voz (fala do KILGORE)
+// ============================================================
+const synth = window.speechSynthesis;
+
+function speak(text) {
+  if (!synth) return;
+  synth.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'pt-BR';
+  utter.rate = 1.0;
+  utter.pitch = 0.9;
+
+  // Tenta achar uma voz em português
+  const voices = synth.getVoices();
+  const ptVoice = voices.find(v => v.lang.startsWith('pt'));
+  if (ptVoice) utter.voice = ptVoice;
+
+  utter.onstart = () => {
+    orb.classList.add('speaking');
+    statusEl.textContent = 'Falando...';
+  };
+  utter.onend = () => {
+    orb.classList.remove('speaking');
+    statusEl.textContent = 'Clica na esfera pra falar de novo';
+  };
+
+  synth.speak(utter);
+}
+
+// ============================================================
+// CÉREBRO DO KILGORE
+// Aqui é onde mora a "inteligência". Por enquanto é baseado em
+// regras + respostas contextuais. Quando quiser plugar uma LLM
+// de verdade (Anthropic, OpenAI, etc), troca essa função por
+// um fetch pra API e retorna a resposta.
+// ============================================================
+function getKilgoreResponse(question) {
+  const q = question.toLowerCase().trim();
+
+  // Saudações
+  if (/\b(oi|olá|ola|e ai|eae|fala|opa)\b/.test(q)) {
+    return 'E aí MK, tô aqui. O que tu precisa?';
+  }
+
+  // Como vai / tudo bem
+  if (/(tudo bem|como vai|como está|como tá)/.test(q)) {
+    return 'Tô firme MK. Pergunta o que tu quer saber.';
+  }
+
+  // Nome
+  if (/(qual.*seu nome|quem é você|quem e voce|como se chama)/.test(q)) {
+    return 'Meu nome é KILGORE. Sou seu assistente pessoal, MK.';
+  }
+
+  // Hora
+  if (/(que horas|hora agora|horário)/.test(q)) {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2, '0');
+    return `Agora são ${h} e ${m}, MK.`;
+  }
+
+  // Data
+  if (/(que dia|data de hoje|hoje é)/.test(q)) {
+    const now = new Date();
+    const dias = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+    const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    return `Hoje é ${dias[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]} de ${now.getFullYear()}.`;
+  }
+
+  // Piada
+  if (/(piada|conta uma|me faz rir)/.test(q)) {
+    const piadas = [
+      'Por que o programador foi pro médico? Porque ele tava com bug no sistema. Ok, foi ruim, MK.',
+      'O que o JavaScript disse pro Python? Nada, eles nem se falam direito.',
+      'Debugar é como ser um detetive num filme de crime onde você também é o assassino.'
+    ];
+    return piadas[Math.floor(Math.random() * piadas.length)];
+  }
+
+  // Obrigado
+  if (/(obrigado|valeu|thanks)/.test(q)) {
+    return 'De nada, MK. Pra isso que eu tô aqui.';
+  }
+
+  // Tchau
+  if (/(tchau|até mais|flw|falou|adeus)/.test(q)) {
+    return 'Falou MK. Tô aqui quando precisar.';
+  }
+
+  // Programação / código
+  if (/(programa|código|codar|javascript|python|html|css)/.test(q)) {
+    return 'Programação é sobre persistência, MK. O que tu quer saber especificamente? Posso tentar te ajudar.';
+  }
+
+  // Resposta padrão - quando não souber
+  return `Entendi que tu perguntou sobre "${question}", MK. Pra responder isso direito eu precisava tá conectado numa IA de verdade. Olha o código que tem um gancho pronto pra plugar uma API.`;
+}
+
+function handleQuestion(question) {
+  const response = getKilgoreResponse(question);
+  botTextEl.textContent = response;
+  speak(response);
+}
+
+// ============================================================
+// Eventos da UI
+// ============================================================
+orb.addEventListener('click', () => {
+  if (!recognition) return;
+  if (isListening) {
+    recognition.stop();
+    return;
+  }
+  synth.cancel();
+  try {
+    recognition.start();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+stopBtn.addEventListener('click', () => {
+  synth.cancel();
+  if (isListening) recognition.stop();
+  orb.classList.remove('speaking', 'listening');
+  statusEl.textContent = 'Parado. Clica na esfera pra falar.';
+});
+
+clearBtn.addEventListener('click', () => {
+  userTextEl.textContent = '—';
+  botTextEl.textContent = '—';
+  statusEl.textContent = 'Clica na esfera pra começar';
+});
+
+// Força o carregamento das vozes (alguns navegadores são preguiçosos)
+if (synth) {
+  synth.onvoiceschanged = () => synth.getVoices();
+}
+
+// Mensagem de boas-vindas
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const greet = 'KILGORE online. E aí MK, clica na esfera quando quiser falar.';
+    botTextEl.textContent = greet;
+    speak(greet);
+  }, 800);
+});
+</script>
+
+</body>
+</html>
